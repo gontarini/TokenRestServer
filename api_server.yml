@@ -1,0 +1,25 @@
+#Mongo connection
+mongo:
+    db: mydb
+    host: localhost
+    port: 27017
+    password: ""
+    user: ""
+
+
+# Logging Settings
+logging:
+    level: INFO
+    loggers:
+      "com.eeb.example.dropwizardmongo": DEBUG
+
+facebook: #application key and id
+    secret: e86e3149512d6a51fb2630d83ca64476
+    appId: 181981548889895 ## lista
+
+twitter: #application keys
+    consumerKey: R4hMQevDqkFd3ShAVd2SWOn3T
+    consumerSecret: LzmjMOWljzrmdTYsaXuWOjF1QQqTRPoFh2SCooqNfdnfUAULeZ
+
+
+    
