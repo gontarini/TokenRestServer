@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import org.bson.Document;
 
-import com.sotrender.api_server.MyApplicationConfiguration.TwitterOauthConfiguration;
+import com.sotrender.api_server.Configurations.TwitterOauthConfiguration;
 
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
@@ -32,7 +32,7 @@ public class PostResponseTwitter extends PostResponse {
 	/**
 	 * Twitter object which is the same for every instance of the PostResponseTwitter class
 	 */
-	private static Twitter twitter;
+	private Twitter twitter;
 
 	/**
 	 * Constructor which invokes parent constructor.
@@ -50,12 +50,8 @@ public class PostResponseTwitter extends PostResponse {
 	public void createEntity() throws TwitterException {
 		this.mongoId = this.doc.get("_id").toString();
 		this.appId = this.doc.get("app_id").toString();
-
 		this.token = this.doc.get("token").toString();
-//		this.token = "1467720150-TsntRLk5Ig5yTLRtB3VBmIcYYQmk9GDz8tF9nxm";
-
 		this.secretToken = this.doc.getString("secret").toString();
-//		this.secretToken = "dF1wh5bYLzCc0QVfDLaOz1jjz9RcvFPNLoWPXYBy8agYz";
 
 		checkToken();
 	}
@@ -67,9 +63,9 @@ public class PostResponseTwitter extends PostResponse {
 	@Override
 	protected void checkToken() throws TwitterException {
 		this.accessToken = new AccessToken(this.token, this.secretToken);
-		PostResponseTwitter.getTwitter().setOAuthAccessToken(this.accessToken);
+		this.getTwitter().setOAuthAccessToken(this.accessToken);
 
-		User user = PostResponseTwitter.getTwitter().verifyCredentials();
+		User user = this.getTwitter().verifyCredentials();
 		this.name = user.getName();
 		this.userId = user.getId();
 		this.picture = user.getOriginalProfileImageURL();
@@ -81,19 +77,19 @@ public class PostResponseTwitter extends PostResponse {
 	 * @throws TwitterException exception during veryfing app
 	 * @throws IOException internal exception
 	 */
-	public static void twitterAuthentication(TwitterOauthConfiguration twitterConf) throws TwitterException,
+	public void twitterAuthentication(String consumerKey, String consumerSecretKey) throws TwitterException,
 			IOException {
-		PostResponseTwitter.setTwitter(TwitterFactory.getSingleton());
-		PostResponseTwitter.getTwitter().setOAuthConsumer(
-				twitterConf.consumerKey,
-				twitterConf.consumerSecret);
+		this.setTwitter(TwitterFactory.getSingleton());
+		this.getTwitter().setOAuthConsumer(
+				consumerKey,
+				consumerSecretKey);
 	}
 
 	/**
 	 * Getter method for twitter object
 	 * @return twitter instance
 	 */
-	public static Twitter getTwitter() {
+	private Twitter getTwitter() {
 		return twitter;
 	}
 
@@ -101,8 +97,8 @@ public class PostResponseTwitter extends PostResponse {
 	 * Setter method for twitter object
 	 * @param twitter 
 	 */
-	public static void setTwitter(Twitter twitter) {
-		PostResponseTwitter.twitter = twitter;
+	private void setTwitter(Twitter twitter) {
+		this.twitter = twitter;
 	}
 
 }

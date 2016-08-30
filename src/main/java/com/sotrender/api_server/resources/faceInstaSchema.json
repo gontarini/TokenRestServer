@@ -1,0 +1,14 @@
+{
+    "properties": {
+        "app_id": {
+            "type": "integer"
+        },
+        "token": {
+            "type": "string"
+        },
+        "source": {
+            "type": "string"
+        }
+    },
+    "required": ["app_id", "token", "source"]
+}

@@ -26,4 +26,10 @@ public class EntityInMongo implements ExceptionMapper<MongoException> {
 			      build();
 	}
 
+	public Response toResponse(String message){
+		return Response.status(404).
+			      entity(message).
+			      type("text/plain").
+			      build();
+	}
 }

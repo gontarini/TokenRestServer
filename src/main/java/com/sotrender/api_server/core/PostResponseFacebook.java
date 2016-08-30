@@ -15,7 +15,7 @@ import com.mongodb.client.MongoCollection;
 import com.restfb.DefaultFacebookClient;
 import com.restfb.scope.ExtendedPermissions;
 import com.restfb.scope.ScopeBuilder;
-import com.sotrender.api_server.MyApplicationConfiguration.FacebookConfiguration;
+import com.sotrender.api_server.Configurations.FacebookConfiguration;
 import com.sotrender.api_server.db.MongoManaged;
 import com.sotrender.api_server.entities.PageAccessToken;
 import com.sotrender.api_server.exceptions.TokenExpired;
@@ -86,7 +86,7 @@ public class PostResponseFacebook extends PostResponse {
 		this.appId = this.doc.get("app_id").toString();
 		this.token = this.doc.get("token").toString();
 
-		this.generateAppAccessToken(this.appId);
+//		this.generateAppAccessToken(this.appId);
 		this.userAccessToken = this.token;
 		checkToken();
 	}
@@ -184,8 +184,10 @@ public class PostResponseFacebook extends PostResponse {
 		for (final JsonNode element : accArray) {
 			// System.out.println(element.get("name").asText());
 			this.accounts.add(element.get("name").asText());
-			this.pageAccessTokens.add(new PageAccessToken(element, this.appId, this.mongoId));
+			this.pageAccessTokens.add(new PageAccessToken(element, this.appId, this.mongoId, this.permissions));
 		}
+		
+		
 	}
 	
 	/**
@@ -193,12 +195,9 @@ public class PostResponseFacebook extends PostResponse {
 	 * Secret app token is read from configuration file.
 	 * @param appId aplication id given in post message
 	 */
-	private void generateAppAccessToken(String appId) {
+	private void generateAppAccessToken(String appId, String appSecret) {
 		com.restfb.FacebookClient.AccessToken appAccessToken = new DefaultFacebookClient()
-				.obtainAppAccessToken(config.appId, config.secret);
-
-		ScopeBuilder scopes = new ScopeBuilder();
-		scopes.addPermission(ExtendedPermissions.MANAGE_PAGES);
+				.obtainAppAccessToken(appId, appSecret);
 
 		this.appToken = appAccessToken.getAccessToken();
 	}
@@ -207,8 +206,8 @@ public class PostResponseFacebook extends PostResponse {
 	 * Pass facebook configurations.
 	 * @param configuration configuration object
 	 */
-	public static void setUpConfiguration(FacebookConfiguration configuration) {
-		config = configuration;
+	public void setUpConfiguration(String appId, String appSecret) {
+		this.generateAppAccessToken(appId, appSecret);
 	}
 
 	/**
@@ -231,13 +230,11 @@ public class PostResponseFacebook extends PostResponse {
 				// Convert object to JSON string and pretty print
 				jsonInString = mapper.writerWithDefaultPrettyPrinter()
 						.writeValueAsString(element);
-				System.out.println(jsonInString);
 
 				Document doc = mapper.readValue(jsonInString, Document.class);
 				doc.append("usageCount", 1);
 
 				collection.insertOne(doc);
-				System.out.println("Added managed pages");
 
 			} catch (JsonGenerationException e) {
 				e.printStackTrace();

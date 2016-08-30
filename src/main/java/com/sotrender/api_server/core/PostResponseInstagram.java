@@ -35,7 +35,6 @@ public class PostResponseInstagram extends PostResponse{
 		
 		this.token = this.doc.get("token").toString();
 
-//		this.accessToken = "3079523915.1677ed0.bc3d9dfc74fb4742996e7f2e61a27501";
 		this.accessToken = this.token;
 		checkToken();
 	}
@@ -53,11 +52,8 @@ public class PostResponseInstagram extends PostResponse{
 		JsonNode metaInstagram = instagramJson.get("meta");
 		
 		if (metaInstagram.get("code").asInt() == 200){
-			System.out.println("requestDone");
 			this.userId = dataInstagram.get("id").asLong();
-			System.out.println("id");
 			this.picture = dataInstagram.get("profile_picture").asText();
-			System.out.println("picture");
 			this.name = dataInstagram.get("full_name").asText();
 		}
 		else{

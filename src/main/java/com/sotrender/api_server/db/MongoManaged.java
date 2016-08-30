@@ -9,7 +9,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.MongoClientURI;
 
-import com.sotrender.api_server.MyApplicationConfiguration.MongoConfiguration;
+import com.sotrender.api_server.Configurations.MongoConfiguration;
 
 /**
  * Class manages connection with mongo database and store some basic info about

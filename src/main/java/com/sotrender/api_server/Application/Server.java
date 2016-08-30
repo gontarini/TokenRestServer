@@ -1,4 +1,4 @@
-package com.sotrender.api_server.MyApplication;
+package com.sotrender.api_server.Application;
 
 import io.dropwizard.Application;
 import io.dropwizard.configuration.EnvironmentVariableSubstitutor;
@@ -9,14 +9,14 @@ import io.dropwizard.setup.Environment;
 import com.sotrender.api_server.db.MongoManaged;
 import com.sotrender.api_server.health.MongoHealthCheck;
 import com.sotrender.api_server.resources.Resources;
-import com.sotrender.api_server.MyApplicationConfiguration.MainConfiguration;
+import com.sotrender.api_server.Configurations.MainConfiguration;
 
 /**
  * Main class of the project which loads configurations,
  * add them to enviroment and register resources class.
  * @author pawel
  */
-public class ServerApplication extends Application<MainConfiguration> {
+public class Server extends Application<MainConfiguration> {
 	
 	/**
 	 * Main method of the project which run every single thread
@@ -24,7 +24,7 @@ public class ServerApplication extends Application<MainConfiguration> {
 	 * @throws Exception
 	 */
     public static void main(String[] args) throws Exception {
-        new ServerApplication().run(args);
+        new Server().run(args);
     }
 
     /**
@@ -58,7 +58,7 @@ public class ServerApplication extends Application<MainConfiguration> {
         environment.lifecycle().manage(mongoManaged);
         environment.healthChecks().register("MongoHealthCheck", new MongoHealthCheck(mongoManaged));
 
-        environment.jersey().register(new Resources(mongoManaged, configuration.facebook, configuration.twitter));
+        environment.jersey().register(new Resources(mongoManaged, configuration.getFacebookApps() , configuration.getTwitterApps(), configuration.getInstagramApps(), configuration.schema));
 
     }
     

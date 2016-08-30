@@ -72,6 +72,5 @@ public class GetResponse {
 		this.timeStamp = objId.getTimestamp();
 		this.addedAt = new java.util.Date((long) this.timeStamp * 1000)
 				.toString();
-		System.out.println(this.addedAt);
 	}
 }

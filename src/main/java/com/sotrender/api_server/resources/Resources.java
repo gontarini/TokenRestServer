@@ -29,6 +29,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.fge.jsonschema.core.exceptions.ProcessingException;
 import com.mongodb.BasicDBObject;
 import com.mongodb.Block;
 import com.mongodb.MongoException;
@@ -37,9 +38,12 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.client.result.DeleteResult;
-import com.sotrender.api_server.MyApplicationConfiguration.FacebookConfiguration;
-import com.sotrender.api_server.MyApplicationConfiguration.TwitterOauthConfiguration;
+import com.sotrender.api_server.Configurations.FacebookConfiguration;
+import com.sotrender.api_server.Configurations.InstagramConfigurations;
+import com.sotrender.api_server.Configurations.Schema;
+import com.sotrender.api_server.Configurations.TwitterOauthConfiguration;
 import com.sotrender.api_server.core.GetResponse;
+import com.sotrender.api_server.core.GetResponseFacebook;
 import com.sotrender.api_server.core.GetResponsePageFacebook;
 import com.sotrender.api_server.core.GetResponseTwitter;
 import com.sotrender.api_server.core.PostResponse;
@@ -47,21 +51,27 @@ import com.sotrender.api_server.core.PostResponseFacebook;
 import com.sotrender.api_server.core.PostResponseInstagram;
 import com.sotrender.api_server.core.PostResponseTwitter;
 import com.sotrender.api_server.db.MongoManaged;
+import com.sotrender.api_server.entities.AccessLevelWage;
 import com.sotrender.api_server.exceptions.EntityInMongo;
 //import com.sotrender.api_server.exceptions.EntityNotFoundMapper;
 import com.sotrender.api_server.exceptions.JsonExceptionMapper;
+import com.sotrender.api_server.exceptions.JsonValidation;
 import com.sotrender.api_server.exceptions.TokenExpired;
+import com.sotrender.api_server.exceptions.ValidationFailure;
 
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Scanner;
 
 /**
  * Main class implements resources in the following project
+ * 
  * @author pawel
- *
+ * 
  */
 @SuppressWarnings("unused")
 @Path("/channel")
@@ -119,38 +129,138 @@ public class Resources {
 	private GetResponsePageFacebook getResponsePageFacebook;
 
 	/**
-	 * Constructor sets up twitter and facebook configuration and set mongoManaged instance field
-	 * @param mongoManaged mongoManage instance
-	 * @throws TwitterException twitter exception
-	 * @throws IOException internal exception
+	 * List of facebook application configuration
+	 */
+	private List<FacebookConfiguration> facebookConfigurations;
+
+	/**
+	 * List of twitter application configuration
+	 */
+	private List<TwitterOauthConfiguration> twitterConfigurations;
+
+	/**
+	 * Schema file of twitter json
+	 */
+	private String schemaTwitter;
+
+	/**
+	 * Facebook app id essential to set up authorizathion
+	 */
+	private String appId;
+
+	/**
+	 * Particular facebook application secret key
+	 */
+	private String appSecret;
+
+	/**
+	 * Twitter consumer secret key
+	 */
+	private String consumerSecret;
+
+	/**
+	 * Twitter consumer key
+	 */
+	private String consumerKey;
+
+	/**
+	 * Schema file of facebook and instagram json
+	 */
+	private String schemaFaceInsta;
+
+	/**
+	 * Boolean parameter which indicates whether given appId or appSecret in
+	 * json file is correct
+	 */
+	private boolean isvalid;
+
+	/**
+	 * List of instagram application configurations
+	 */
+	private List<InstagramConfigurations> instagramConfigurations;
+
+	/**
+	 * Mongo identifier
+	 */
+	private ObjectId id;
+
+	/**
+	 * Facebook instance of object to response
+	 */
+	private GetResponseFacebook getResponseFacebook;
+
+	/**
+	 * Constructor sets up all configurations and set mongoManaged instance
+	 * field. Whatsmore, it loads json schema files and convert them to string
+	 * type
+	 * 
+	 * @param mongoManaged
+	 *            mongoManage instance
+	 * @param facebookConf
+	 *            facebook configurations
+	 * @param twitterConf
+	 *            twitter configurations
+	 * @param instagramConf
+	 *            instagram configurations
+	 * @param schema
+	 *            schema paths
+	 * @throws TwitterException
+	 *             twitter exception
+	 * @throws IOException
+	 *             internal exception
 	 */
 	public Resources(MongoManaged mongoManaged,
-			FacebookConfiguration facebookConf,
-			TwitterOauthConfiguration twitterConf) throws TwitterException,
-			IOException {
+			List<FacebookConfiguration> facebookConf,
+			List<TwitterOauthConfiguration> twitterConf,
+			List<InstagramConfigurations> instagramConf, Schema schema)
+			throws TwitterException, IOException {
+
+		this.isvalid = false;
+
 		this.mongoManaged = mongoManaged;
-		PostResponseTwitter.twitterAuthentication(twitterConf);
-		PostResponseFacebook.setUpConfiguration(facebookConf);
+		final org.slf4j.Logger logger = LoggerFactory
+				.getLogger(Resources.class);
+
+		this.facebookConfigurations = facebookConf;
+		this.twitterConfigurations = twitterConf;
+		this.instagramConfigurations = instagramConf;
+
+		File schemaFileTwitter = new File(schema.twitter);
+		File schemaFileFaceInsta = new File(schema.faceInsta);
+
+		schemaFaceInsta = new Scanner(schemaFileFaceInsta).useDelimiter("\\Z")
+				.next();
+		schemaTwitter = new Scanner(schemaFileTwitter).useDelimiter("\\Z")
+				.next();
+
+		// PostResponseTwitter.twitterAuthentication(twitterConf.get(0));
+		// PostResponseFacebook.setUpConfiguration(facebookConf.get(0));
 	}
 
 	/**
-	 * Http post method which consume and produce json object. 
-	 * Client should send json file which have strict fields and looks like the one below:
+	 * Http post method which consume and produce json object. Client should
+	 * send json file which have strict fields and looks like the one below:
 	 * 
-	 * Facebook:
-	 * {"app_id":{appId}, "token" : {token}, "source" : {sourcePlace} }
+	 * Facebook: {"app_id":{appId}, "token" : {token}, "source" : {sourcePlace}
+	 * }
 	 * 
-	 * Twitter:
-	 * {"app_id":{appID}, "token" : {accessToken}, "secret" : {ApplicationSecretToken},
- 		"source" : {sourcePlace} }
 	 * 
-	 * Instagram:
-	 * {"app_id":{appId} , "token" :{token}, "source" : {sourcePlace} }
+	 * Twitter: {"app_id":{appID}, "token" : {accessToken}, "secret" :
+	 * {ApplicationSecretToken}, "source" : {sourcePlace} }
 	 * 
-	 * @param channelName social media channel name
-	 * @param message json to be parsed
+	 * Instagram: {"app_id":{appId} , "token" :{token}, "source" : {sourcePlace}
+	 * }
+	 * 
+	 * To be more familiar with json file fields, check out json schema files
+	 * and check types of particular fields
+	 * 
+	 * @param channelName
+	 *            social media channel name
+	 * @param message
+	 *            json to be parsed
 	 * @return Response object to client side
-	 * @throws IOException internal exception
+	 * @throws IOException
+	 *             internal exception
 	 */
 	@POST
 	@Timed
@@ -162,69 +272,183 @@ public class Resources {
 		final org.slf4j.Logger logger = LoggerFactory
 				.getLogger(Resources.class);
 		logger.info("Resources Insert Request Recieved" + "\n" + message);
-		this.collection = this.mongoManaged.getDb().getCollection(channelName);
 
+		this.isvalid = false;
 		try {
-			Document doc = this.documentGet(message);
-			doc.append("usageCount", 1);
-
-			this.collection.insertOne(doc);
-
-			FindIterable iterable = this.collection.find().sort(
-					new Document("_id", -1));
-			Document saved = (Document) iterable.first();
-
-			return this.createResponse(channelName, saved);
-		} catch (JsonParseException e) {
-			System.out.println("Check out correctness of given json..");
-			return new JsonExceptionMapper().toResponse(e);
-		} catch (MongoException ex) {
-
-			Document doc = documentGet(message);
-			doc.append("usageCount", 1);
-			this.collection.deleteOne(new Document("token", this.currentToken));
-			this.collection.insertOne(doc);
-
-			try {
-				this.createResponse(channelName, doc);
-			} catch (TwitterException e) {
-				return this.catchTwitterException(e, message);
-			} catch (TokenExpired e) {
-				return this.catchTokenExpired(e, channelName, message);
+			this.checkValidation(message, channelName);
+			if (this.isvalid == false) {
+				return new ValidationFailure()
+						.toResponse(new ProcessingException(
+								"There is no app which can handle your token. Please, check given app data"));
 			}
 
-			return new EntityInMongo().toResponse(new MongoException(
-					"Updated token"));
+			this.collection = this.mongoManaged.getDb().getCollection(
+					channelName);
 
-		} catch (TokenExpired e) {
-			// throw exception of token incorrectness
-			return this.catchTokenExpired(e, channelName, message);
+			try {
+				Document doc = this.documentGet(message);
+				doc.append("usageCount", 1);
 
-		} catch (TwitterException e) {
-			// rate limit exceeded
-			return this.catchTwitterException(e, message);
+				this.collection.insertOne(doc);
+				this.id = doc.getObjectId("_id");
+
+				FindIterable iterable = this.collection.find(new Document(
+						"_id", this.id));
+
+				Document saved = (Document) iterable.first();
+
+				return this.createResponse(channelName, saved);
+			} catch (JsonParseException e) {
+				System.out.println("Check out correctness of given json..");
+				return new JsonExceptionMapper().toResponse(e);
+			} catch (MongoException ex) {
+
+				Document doc = documentGet(message);
+				doc.append("usageCount", 1);
+				this.collection.deleteOne(new Document("token",
+						this.currentToken));
+				this.collection.insertOne(doc);
+
+				try {
+					this.createResponse(channelName, doc);
+				} catch (TwitterException e) {
+					return this.catchTwitterException(e, message);
+				} catch (TokenExpired e) {
+					return this.catchTokenExpired(e, channelName, message);
+				}
+
+				return new EntityInMongo().toResponse(new MongoException(
+						"Updated token"));
+
+			} catch (TokenExpired e) {
+				// throw exception of token incorrectness
+				return this.catchTokenExpired(e, channelName, message);
+
+			} catch (TwitterException e) {
+				// rate limit exceeded
+				return this.catchTwitterException(e, message);
+			}
+
+		} catch (ProcessingException e1) {
+			e1.printStackTrace();
+			return new ValidationFailure().toResponse(e1);
 		}
 	}
 
 	/**
+	 * Method which checks whether given json fits to loaded schema and then
+	 * compare certain field in it to the ones read from configuration file
+	 * (appId). If the field fits, loop over configuration objects is broken and
+	 * validation is correct, otherwise it goes to another configuration object.
+	 * If it is not found an object suitable for the given json, validation
+	 * report is failure
+	 * 
+	 * @param message
+	 * @param channelName
+	 * @throws ProcessingException
+	 * @throws IOException
+	 */
+	private void checkValidation(String message, String channelName)
+			throws ProcessingException, IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		JsonNode rootNode = mapper.readTree(message);
+
+		if (channelName.equals("facebook")) {
+			if (JsonValidation.isJsonValid(schemaFaceInsta, message)) {
+				System.out.println("Valid!");
+				JsonNode appId = rootNode.path("app_id");
+
+				for (FacebookConfiguration config : this.facebookConfigurations) {
+					System.out.println(config.getAppId());
+					if (config.getAppId().equals(appId.asText())) {
+						System.out.println("Completeley valid facebook");
+						this.appId = appId.asText();
+						this.appSecret = config.getSecret();
+						this.isvalid = true;
+						break;
+					}
+				}
+			} else {
+				throw new ProcessingException(
+						"Json is not fit to facebook json schema");
+
+			}
+		} else if (channelName.equals("instagram")) {
+			if (JsonValidation.isJsonValid(schemaFaceInsta, message)) {
+				System.out.println("Valid!");
+				JsonNode appId = rootNode.path("app_id");
+				for (InstagramConfigurations config : this.instagramConfigurations) {
+					if (config.getAppId().equals(appId.asText())) {
+						System.out.println("Completeley valid instagram");
+
+						this.appId = appId.asText();
+						this.isvalid = true;
+						break;
+					}
+				}
+			} else {
+				throw new ProcessingException(
+						"Json is not fit to instagram json schema");
+			}
+		} else {
+			if (JsonValidation.isJsonValid(schemaTwitter, message)) {
+				System.out.println("Valid!");
+				JsonNode appId = rootNode.path("app_id");
+				JsonNode appSecret = rootNode.path("secret");
+
+				for (TwitterOauthConfiguration twConfig : this.twitterConfigurations) {
+					System.out.println(twConfig.getAppId());
+					System.out.println(twConfig.getAppId().equals(
+							appId.asText()));
+					if (twConfig.getAppId().equals(appId.asText())) {
+						System.out.println("Completeley valid twitter");
+
+						this.consumerSecret = twConfig.getConsumerSecret();
+						this.consumerKey = twConfig.getConsumerKey();
+
+						this.isvalid = true;
+						break;
+					}
+				}
+			} else {
+				throw new ProcessingException(
+						"Json is not fit to twitter json schema");
+			}
+		}
+	}
+
+	/**
+	 * Method which choose a way to behave based on channel name given as a
+	 * parameter. Basically, it creates response object, set up configurations
+	 * if necessary, create fields in that object and return accepting response.
 	 * 
 	 * @param channelName
+	 *            facebook, twitter or instagram
 	 * @param doc
-	 * @return
+	 *            document from mongoDB
+	 * @return response object to be sent to client
 	 * @throws TokenExpired
 	 * @throws TwitterException
-	 * @throws JsonProcessingException
+	 * @throws IOException
 	 */
 	private Response createResponse(String channelName, Document doc)
-			throws TokenExpired, TwitterException, JsonProcessingException {
+			throws TokenExpired, TwitterException, IOException {
 		if (channelName.equals("facebook")) {
 			postResponseFacebook = new PostResponseFacebook(doc);
+			postResponseFacebook.setUpConfiguration(this.appId, this.appSecret);
 			postResponseFacebook.createEntity();
 			postResponseFacebook.addPageTokensToMongo(this.mongoManaged);
+
+			this.collection.updateOne(new Document("_id", this.id),
+					new Document("$set", new Document("permissions",
+							postResponseFacebook.permissions)));
+
 			return Response.accepted(postResponseFacebook).build();
 
 		} else if (channelName.equals("twitter")) {
 			postResponseTwitter = new PostResponseTwitter(doc);
+			postResponseTwitter.twitterAuthentication(this.consumerKey,
+					this.consumerSecret);
 			postResponseTwitter.createEntity();
 			return Response.accepted(postResponseTwitter).build();
 
@@ -236,6 +460,15 @@ public class Resources {
 		return null;
 	}
 
+	/**
+	 * Method which handles exceptions over twitter
+	 * 
+	 * @param ex
+	 * @param message
+	 * @return
+	 * @throws JsonProcessingException
+	 * @throws IOException
+	 */
 	private Response catchTwitterException(TwitterException ex, String message)
 			throws JsonProcessingException, IOException {
 		MongoCollection<Document> collectionInvalid = this.mongoManaged.getDb()
@@ -288,6 +521,13 @@ public class Resources {
 		return doc;
 	}
 
+	/**
+	 * Http het request method. Return object consist with elements like: token,
+	 * secret (twitter), appId, date of add
+	 * 
+	 * @param channelName
+	 * @return
+	 */
 	@GET()
 	@Timed
 	@Produces(MediaType.APPLICATION_JSON)
@@ -303,7 +543,7 @@ public class Resources {
 		FindIterable iterable = this.collection.find()
 				.sort(new Document("usageCount", 1)).limit(1);
 		Document document = (Document) iterable.first();
-//		System.out.println(document);
+		// System.out.println(document);
 
 		if (document.isEmpty()) {
 			return Response.status(404).build();
@@ -324,6 +564,9 @@ public class Resources {
 			if (channelName.equals("twitter")) {
 				getResponseTwitter = new GetResponseTwitter(document);
 				return Response.accepted(getResponseTwitter).build();
+			} else if (channelName.equals("facebook")) {
+				getResponseFacebook = new GetResponseFacebook(document, false);
+				return Response.accepted(getResponseFacebook).build();
 			} else {
 				getResponse = new GetResponse(document, false);
 				return Response.accepted(getResponse).build();
@@ -332,6 +575,14 @@ public class Resources {
 		}
 	}
 
+	/**
+	 * Http delete request method. It deletes an specified object in given
+	 * parameters
+	 * 
+	 * @param channelName
+	 * @param id
+	 * @return
+	 */
 	@DELETE
 	@Timed
 	@Path("/{channelName}/{id}")
@@ -354,6 +605,14 @@ public class Resources {
 		}
 	}
 
+	/**
+	 * Http get request method. It returns random object among objects stored in
+	 * mongodb with certain appId
+	 * 
+	 * @param channelName
+	 * @param appId
+	 * @return
+	 */
 	@GET()
 	@Timed
 	@Produces(MediaType.APPLICATION_JSON)
@@ -395,6 +654,9 @@ public class Resources {
 			if (channelName.equals("twitter")) {
 				getResponseTwitter = new GetResponseTwitter(document);
 				return Response.accepted(getResponseTwitter).build();
+			} else if (channelName.equals("facebook")) {
+				getResponseFacebook = new GetResponseFacebook(document, false);
+				return Response.accepted(getResponseFacebook).build();
 			} else {
 				getResponse = new GetResponse(document, false);
 				return Response.accepted(getResponse).build();
@@ -403,6 +665,14 @@ public class Resources {
 		}
 	}
 
+	/**
+	 * Http get request method. It returns specified object by given parameter
+	 * (id)
+	 * 
+	 * @param channelName
+	 * @param id
+	 * @return
+	 */
 	@GET()
 	@Timed
 	@Produces(MediaType.APPLICATION_JSON)
@@ -443,6 +713,9 @@ public class Resources {
 			if (channelName.equals("twitter")) {
 				getResponseTwitter = new GetResponseTwitter(document);
 				return Response.accepted(getResponseTwitter).build();
+			} else if (channelName.equals("facebook")) {
+				getResponseFacebook = new GetResponseFacebook(document, false);
+				return Response.accepted(getResponseFacebook).build();
 			} else {
 				getResponse = new GetResponse(document, false);
 				return Response.accepted(getResponse).build();
@@ -455,8 +728,7 @@ public class Resources {
 	@Timed
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/facebook/page/{appId}/{pageId}")
-	public Response getPageToken(
-			@QueryParam("permissions") final List<String> permissions,
+	public Response getPageToken(@QueryParam("permissions") String permissions,
 			@QueryParam("accessLevel") String accessLevel,
 			@PathParam("appId") String appId, @PathParam("pageId") String pageId) {
 
@@ -466,28 +738,40 @@ public class Resources {
 		final org.slf4j.Logger logger = LoggerFactory
 				.getLogger(Resources.class);
 		logger.info("Resources GET page token Request Recieved, list size:  "
-				+ permissions.size());
+				+ permissions);
 
 		this.collection = this.mongoManaged.getDb().getCollection(
 				"facebookPages");
 
-		BasicDBObject andQuery = new BasicDBObject();
+		BasicDBObject query = new BasicDBObject();
+
+		AccessLevelWage wage = new AccessLevelWage();
+		if (permissions != null) {
+			String[] perms = permissions.split(",");
+			List<String> list = new ArrayList<String>();
+			for (String permission : perms) {
+				list.add(permission);
+			}
+			query.put("permissions", new BasicDBObject("$in", list));
+		}
+		if (accessLevel != null) {
+			query.put("accessLevelWage",
+					new BasicDBObject("$lte", wage.get(accessLevel)));
+		}
+
 		List<BasicDBObject> obj = new ArrayList<BasicDBObject>();
 		obj.add(new BasicDBObject("app_id", appId));
 		obj.add(new BasicDBObject("pageId", pageId));
+		query.put("$or", obj);
 
-		andQuery.put("$or", obj);
-
-		System.out.println(andQuery);
-		FindIterable iterable = this.collection.find(andQuery);
+		
+		System.out.println(query);
+		FindIterable iterable = this.collection.find(query).sort(new Document("usageCount", 1)).limit(1);;
 
 		Document document = (Document) iterable.first();
 		System.out.println(document);
 
-		if (document.isEmpty()) {
-			return Response.status(404).build();
-		} else {
-
+		if (iterable.iterator().hasNext()) {
 			int count = (Integer) document.get("usageCount");
 			count++;
 
@@ -502,6 +786,8 @@ public class Resources {
 			}
 			getResponsePageFacebook = new GetResponsePageFacebook(document);
 			return Response.accepted(getResponsePageFacebook).build();
+		} else {
+			return new EntityInMongo().toResponse("There is no token which perform all of constraints");
 		}
 	}
 
@@ -557,7 +843,7 @@ public class Resources {
 		document.remove("usageCount");
 		DeleteResult result = this.collection.deleteOne(new Document("_id",
 				new ObjectId(id)));
-		
+
 		String invalidTokens = channelName + "Invalid";
 		this.collection = this.mongoManaged.getDb()
 				.getCollection(invalidTokens);
@@ -579,7 +865,8 @@ public class Resources {
 				.getLogger(Resources.class);
 		logger.info("Resources DELETE page token Request Recieved " + id);
 
-		this.collection = this.mongoManaged.getDb().getCollection("facebookPages");
+		this.collection = this.mongoManaged.getDb().getCollection(
+				"facebookPages");
 
 		DeleteResult result = this.collection.deleteOne(new Document("_id",
 				new ObjectId(id)));

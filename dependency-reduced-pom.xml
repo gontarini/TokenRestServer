@@ -29,7 +29,7 @@
               <transformers>
                 <transformer />
                 <transformer>
-                  <mainClass>com.sotrender.api_server.MyApplication.ServerApplication</mainClass>
+                  <mainClass>com.sotrender.api_server.Application.Server</mainClass>
                 </transformer>
               </transformers>
             </configuration>

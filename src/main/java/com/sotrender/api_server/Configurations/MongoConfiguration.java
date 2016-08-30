@@ -1,4 +1,4 @@
-package com.sotrender.api_server.MyApplicationConfiguration;
+package com.sotrender.api_server.Configurations;
 
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;

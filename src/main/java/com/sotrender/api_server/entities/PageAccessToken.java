@@ -1,5 +1,7 @@
 package com.sotrender.api_server.entities;
 
+import java.util.List;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 /**
@@ -11,11 +13,6 @@ public class PageAccessToken {
 	 * Facebook page access token
 	 */
 	public String pageAccessToken;
-
-	/**
-	 * Array of permissions of particular token
-	 */
-	public JsonNode pagePermissions;
 
 	/**
 	 * Page unique identifier
@@ -42,16 +39,24 @@ public class PageAccessToken {
 	 */
 	public String accessLevel;
 	
+	public List<String> permissions;
+	
+	private AccessLevelWage wage;
+	
+	public int accessLevelWage;
 	/**
 	 * Constructor which invokes method to create correct object and do it for its own.
 	 * @param data data from which object might be build
 	 * @param appId application identifier
 	 * @param parentId  parent token mongo identifier
 	 */
-	public PageAccessToken(JsonNode data, String appId, String parentId){
+	public PageAccessToken(JsonNode data, String appId, String parentId, List<String> permissions){
+		wage = new AccessLevelWage();
+
 		this.setPageData(data);
 		this.appId = appId;
 		this.parentId = parentId;
+		this.permissions = permissions;
 	}
 	
 	/**
@@ -62,11 +67,19 @@ public class PageAccessToken {
 		this.name = data.get("name").asText();
 		this.pageId = data.get("id").asText();
 
-		JsonNode node = data.get("perms");
-		this.pagePermissions = node;
 		
-		this.accessLevel = node.get(0).toString();
+		this.accessLevel = data.get("perms").get(0).toString();
+		this.accessLevel = this.accessLevel.replace("\"", "");
 		this.pageAccessToken = data.get("access_token").asText();
+
+		this.accessLevelWage = wage.get(this.accessLevel);
 	}
 	
+	/**
+	 * Method sets facebook permissions
+	 * @param permissions
+	 */
+	public void setPermissions(List<String> permissions){
+		this.permissions = permissions;
+	}
 }

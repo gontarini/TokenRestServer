@@ -13,13 +13,26 @@ logging:
     loggers:
       "com.eeb.example.dropwizardmongo": DEBUG
 
-facebook: #application key and id
-    secret: e86e3149512d6a51fb2630d83ca64476
-    appId: 181981548889895 ## lista
+
+facebook:
+   - appId: 181981548889895
+     secret: e86e3149512d6a51fb2630d83ca64476
+   - appId: 10923123123
+     secret : jdasodoasd
+
 
 twitter: #application keys
-    consumerKey: R4hMQevDqkFd3ShAVd2SWOn3T
-    consumerSecret: LzmjMOWljzrmdTYsaXuWOjF1QQqTRPoFh2SCooqNfdnfUAULeZ
+   - appId: 12731431
+     consumerSecret: LzmjMOWljzrmdTYsaXuWOjF1QQqTRPoFh2SCooqNfdnfUAULeZ
+     consumerKey: R4hMQevDqkFd3ShAVd2SWOn3T
+   - appId: 1273143123
+     consumerSecret: jdnadiansdiasd
+     consumerKey: R4hMQevDqkFd3ShAVd2SWOn3T
 
+instagram:
+   - appId: 123456
+   - appId: 234567
 
-    
+schema: #path to local json schemas
+     faceInsta: /home/pawel/maven_projects/api_server/src/main/java/com/sotrender/api_server/resources/faceInstaSchema.json
+     twitter: /home/pawel/maven_projects/api_server/src/main/java/com/sotrender/api_server/resources/twitterSchema.json

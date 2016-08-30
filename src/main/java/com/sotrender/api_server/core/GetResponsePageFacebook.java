@@ -25,14 +25,21 @@ public class GetResponsePageFacebook extends GetResponse{
 	public String accessLevel;
 
 	/**
+	 * Access to page by particular parent token in integer mode
+	 */
+	public int accessLevelWage;
+	
+	/**
 	 * Invoking parent constructor and retrieve certain data from document passed into constructor
 	 * @param document document retrieved from mongo database
 	 */
 	public GetResponsePageFacebook(Document document) {
 		super(document,true);
 		this.parentId = document.get("parentId").toString();
-		this.permissions = document.get("pagePermissions").toString();
+		this.permissions = document.get("permissions").toString();
 		this.accessLevel = document.get("accessLevel").toString();
+		this.accessLevelWage = document.getInteger("accessLevelWage", 0);
+		
 	}
 
 }
