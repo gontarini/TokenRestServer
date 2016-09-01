@@ -4,7 +4,11 @@ import org.bson.Document;
 
 import io.dropwizard.lifecycle.Managed;
 
+import java.util.*;
+
 import com.mongodb.MongoClient;
+import com.mongodb.MongoCredential;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.IndexOptions;
 import com.mongodb.MongoClientURI;
@@ -34,10 +38,14 @@ public class MongoManaged implements Managed {
 		 * @throws Exception exception which might occur during establishing connection and creating indexes
 		 */
 	    public MongoManaged (MongoConfiguration mongoConfig) throws Exception {
-	    	
-	    	this.mongoClient = new MongoClient(mongoConfig.host, mongoConfig.port);
+            List<ServerAddress> seeds = new ArrayList<ServerAddress>();
+            seeds.add( new ServerAddress( mongoConfig.host, mongoConfig.port ) );
+
+	        List<MongoCredential> creds = new ArrayList<MongoCredential>();
+            creds.add( MongoCredential.createMongoCRCredential(mongoConfig.user, mongoConfig.db, mongoConfig.password.toCharArray() ));
+
+	    	this.mongoClient = new MongoClient( seeds, creds);
 	    	this.db = this.mongoClient.getDatabase(mongoConfig.db);
-	    	//so far there is no authenticate
 	    	
 	    	//create indexes for each collection
 	    	this.db.getCollection("twitter").createIndex(new Document("token", 1), new IndexOptions().unique(true));
