@@ -42,7 +42,7 @@ public class MongoManaged implements Managed {
             seeds.add( new ServerAddress( mongoConfig.host, mongoConfig.port ) );
 
 	        List<MongoCredential> creds = new ArrayList<MongoCredential>();
-            creds.add( MongoCredential.createMongoCRCredential(mongoConfig.user, mongoConfig.db, mongoConfig.password.toCharArray() ));
+            creds.add( MongoCredential.createCredential(mongoConfig.user, mongoConfig.db, mongoConfig.password.toCharArray() ));
 
 	    	this.mongoClient = new MongoClient( seeds, creds);
 	    	this.db = this.mongoClient.getDatabase(mongoConfig.db);
