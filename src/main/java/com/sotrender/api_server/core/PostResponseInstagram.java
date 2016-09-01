@@ -27,9 +27,10 @@ public class PostResponseInstagram extends PostResponse{
 	/**
 	 * Overriding method which create response object basing on given mongo document 
 	 * and invoke checkToken method
+	 * @throws Exception error occur during making instagram api request
 	 */
 	@Override
-	public void createEntity() throws TokenExpired {
+	public void createEntity() throws TokenExpired, Exception {
 		this.mongoId = this.doc.get("_id").toString();
 		this.appId = this.doc.get("app_id").toString();
 		
@@ -42,12 +43,17 @@ public class PostResponseInstagram extends PostResponse{
 	/**
 	 * Overriding method to make get request to instagram api
 	 * and retrieve certain data about specified user in such access token
+	 * @throws Exception error occur during making instagram api request
 	 */
 	@Override
-	protected void checkToken() throws TokenExpired {
+	protected void checkToken() throws TokenExpired, Exception {
 		String url = "https://api.instagram.com/v1/users/self/?access_token=" + this.accessToken;
 		
 		JsonNode instagramJson = makeRequest(url);
+		
+		if (instagramJson == null){
+			throw new Exception("Error occur during making instagram api request");
+		}
 		JsonNode dataInstagram = instagramJson.get("data");
 		JsonNode metaInstagram = instagramJson.get("meta");
 		

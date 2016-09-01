@@ -75,10 +75,11 @@ public abstract class PostResponse {
 	/**
 	 * Abstract method aims to create an object full of data to make a response
 	 * 
-	 * @throws TokenExpired
-	 * @throws TwitterException 
+	 * @throws TokenExpired facebook or instagram token expired
+	 * @throws TwitterException twitter token expired
+	 * @throws Exception api error
 	 */
-	public abstract void createEntity() throws TokenExpired, TwitterException;
+	public abstract void createEntity() throws TokenExpired, TwitterException, Exception;
 
 	/**
 	 * Abstract method to retrieve certain data such as: information about given
@@ -86,7 +87,7 @@ public abstract class PostResponse {
 	 * information about the user of given token.
 	 * @throws TwitterException 
 	 */
-	protected abstract void checkToken() throws TokenExpired, TwitterException;
+	protected abstract void checkToken() throws TokenExpired, TwitterException, Exception;
 
 	
 	/**

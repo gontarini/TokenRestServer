@@ -79,9 +79,10 @@ public class PostResponseFacebook extends PostResponse {
 	/**
 	 * Overriding method which create response object basing on given mongo document 
 	 * and invoke checkToken method
+	 * @throws Exception error during making request to facebook api
 	 */
 	@Override
-	public void createEntity() throws TokenExpired {
+	public void createEntity() throws TokenExpired, Exception {
 		this.mongoId = this.doc.get("_id").toString();
 		this.appId = this.doc.get("app_id").toString();
 		this.token = this.doc.get("token").toString();
@@ -95,9 +96,10 @@ public class PostResponseFacebook extends PostResponse {
 	 * Overriding method to make get request to facebook api
 	 * and retrieve certain data about specified user in such access token, access token info about itself
 	 * and available page accounts
+	 * @throws Exception error during making request to facebook api
 	 */
 	@Override
-	protected void checkToken() throws TokenExpired {
+	protected void checkToken() throws TokenExpired, Exception  {
 		String UrlDebug = "https://graph.facebook.com/v2.6/debug_token?input_token="
 				+ this.userAccessToken + "&access_token=" + this.appToken;
 
@@ -129,9 +131,14 @@ public class PostResponseFacebook extends PostResponse {
 	 * if not throw an expire exception
 	 * @param urlDebug specified url ot facebook api
 	 * @throws TokenExpired exception thrown if token got expired
+	 * @throws Exception 
 	 */
-	private void debugToken(String urlDebug) throws TokenExpired{
+	private void debugToken(String urlDebug) throws TokenExpired, Exception{
 		JsonNode debugToken = makeRequest(urlDebug);
+		
+		if (debugToken == null){
+			throw new Exception("Cannot make request to facebook api!");
+		}
 		this.isValid = debugToken.get("data").get("is_valid").asBoolean();
 
 		long secondsToExpire = debugToken.get("data").get("expires_at")

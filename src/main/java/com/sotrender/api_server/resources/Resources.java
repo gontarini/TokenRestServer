@@ -53,6 +53,7 @@ import com.sotrender.api_server.core.PostResponseTwitter;
 import com.sotrender.api_server.db.MongoManaged;
 import com.sotrender.api_server.entities.AccessLevelWage;
 import com.sotrender.api_server.exceptions.EntityInMongo;
+import com.sotrender.api_server.exceptions.ApiFailure;
 //import com.sotrender.api_server.exceptions.EntityNotFoundMapper;
 import com.sotrender.api_server.exceptions.JsonExceptionMapper;
 import com.sotrender.api_server.exceptions.JsonValidation;
@@ -315,6 +316,8 @@ public class Resources {
 					return this.catchTwitterException(e, message);
 				} catch (TokenExpired e) {
 					return this.catchTokenExpired(e, channelName, message);
+				} catch (Exception e) { //api request error
+					e.getMessage();
 				}
 
 				return new EntityInMongo().toResponse(new MongoException(
@@ -327,6 +330,8 @@ public class Resources {
 			} catch (TwitterException e) {
 				// rate limit exceeded
 				return this.catchTwitterException(e, message);
+			} catch (Exception e) {//api request error
+				return new ApiFailure().toResponse(e);
 			}
 
 		} catch (ProcessingException e1) {
@@ -428,11 +433,10 @@ public class Resources {
 	 *            document from mongoDB
 	 * @return response object to be sent to client
 	 * @throws TokenExpired
-	 * @throws TwitterException
-	 * @throws IOException
+	 * @throws Exception api request error
 	 */
 	private Response createResponse(String channelName, Document doc)
-			throws TokenExpired, TwitterException, IOException {
+			throws TokenExpired, Exception {
 		if (channelName.equals("facebook")) {
 			postResponseFacebook = new PostResponseFacebook(doc);
 			postResponseFacebook.setUpConfiguration(this.appId, this.appSecret);
