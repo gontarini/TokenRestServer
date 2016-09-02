@@ -12,6 +12,7 @@ import twitter4j.TwitterException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sotrender.api_server.exceptions.ApiException;
 import com.sotrender.api_server.exceptions.TokenExpired;
 
 /**
@@ -77,17 +78,18 @@ public abstract class PostResponse {
 	 * 
 	 * @throws TokenExpired facebook or instagram token expired
 	 * @throws TwitterException twitter token expired
-	 * @throws Exception api error
+	 * @throws ApiException api error
 	 */
-	public abstract void createEntity() throws TokenExpired, TwitterException, Exception;
+	public abstract void createEntity() throws TokenExpired, TwitterException, ApiException;
 
 	/**
 	 * Abstract method to retrieve certain data such as: information about given
 	 * token (valid_until, permissions, accounts available to contribute to),
 	 * information about the user of given token.
 	 * @throws TwitterException 
+	 * @throws ApiException 
 	 */
-	protected abstract void checkToken() throws TokenExpired, TwitterException, Exception;
+	protected abstract void checkToken() throws TokenExpired, TwitterException, ApiException;
 
 	
 	/**

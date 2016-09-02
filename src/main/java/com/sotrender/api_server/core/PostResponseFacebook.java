@@ -18,6 +18,7 @@ import com.restfb.scope.ScopeBuilder;
 import com.sotrender.api_server.Configurations.FacebookConfiguration;
 import com.sotrender.api_server.db.MongoManaged;
 import com.sotrender.api_server.entities.PageAccessToken;
+import com.sotrender.api_server.exceptions.ApiException;
 import com.sotrender.api_server.exceptions.TokenExpired;
 
 import org.apache.commons.lang3.time.DateUtils;
@@ -79,10 +80,10 @@ public class PostResponseFacebook extends PostResponse {
 	/**
 	 * Overriding method which create response object basing on given mongo document 
 	 * and invoke checkToken method
-	 * @throws Exception error during making request to facebook api
+	 * @throws ApiException error during making request to facebook api
 	 */
 	@Override
-	public void createEntity() throws TokenExpired, Exception {
+	public void createEntity() throws TokenExpired, ApiException {
 		this.mongoId = this.doc.get("_id").toString();
 		this.appId = this.doc.get("app_id").toString();
 		this.token = this.doc.get("token").toString();
@@ -96,10 +97,10 @@ public class PostResponseFacebook extends PostResponse {
 	 * Overriding method to make get request to facebook api
 	 * and retrieve certain data about specified user in such access token, access token info about itself
 	 * and available page accounts
-	 * @throws Exception error during making request to facebook api
+	 * @throws ApiException error during making request to facebook api
 	 */
 	@Override
-	protected void checkToken() throws TokenExpired, Exception  {
+	protected void checkToken() throws TokenExpired, ApiException  {
 		String UrlDebug = "https://graph.facebook.com/v2.6/debug_token?input_token="
 				+ this.userAccessToken + "&access_token=" + this.appToken;
 
@@ -131,13 +132,13 @@ public class PostResponseFacebook extends PostResponse {
 	 * if not throw an expire exception
 	 * @param urlDebug specified url ot facebook api
 	 * @throws TokenExpired exception thrown if token got expired
-	 * @throws Exception 
+	 * @throws ApiException request api exception
 	 */
-	private void debugToken(String urlDebug) throws TokenExpired, Exception{
+	private void debugToken(String urlDebug) throws TokenExpired, ApiException{
 		JsonNode debugToken = makeRequest(urlDebug);
 		
 		if (debugToken == null){
-			throw new Exception("Cannot make request to facebook api!");
+			throw new ApiException();
 		}
 		this.isValid = debugToken.get("data").get("is_valid").asBoolean();
 
@@ -156,10 +157,14 @@ public class PostResponseFacebook extends PostResponse {
 	/**
 	 * Makes request to facebook api by specified url adress and get info about user
 	 * @param urlMe specified url ot facebook api
+	 * @throws ApiException request api exception
 	 */
-	private void meInfo(String urlMe){
+	private void meInfo(String urlMe) throws ApiException{
 		JsonNode meInfo = makeRequest(urlMe);
 
+		if ( meInfo == null){
+			throw new ApiException();
+		}
 		this.userId = meInfo.get("id").asLong();
 		this.picture = meInfo.get("picture").asText();
 		this.name = meInfo.get("name").asText();
@@ -168,9 +173,14 @@ public class PostResponseFacebook extends PostResponse {
 	/**
 	 * Makes request to facebook api by specified url adress and get its permissions
 	 * @param urlPermissions specified url ot facebook api
+	 * @throws ApiException request api exception
 	 */
-	private void permissionsInfo(String urlPermissions){
+	private void permissionsInfo(String urlPermissions) throws ApiException{
 		JsonNode permissions = makeRequest(urlPermissions);
+		
+		if (permissions == null){
+			throw new ApiException();
+		}
 		ArrayNode permArray = (ArrayNode) permissions.get("data");
 
 		for (final JsonNode element : permArray) {
@@ -183,9 +193,14 @@ public class PostResponseFacebook extends PostResponse {
 	 * Makes request to facebook api by specified url adress and get its controlled pages info, 
 	 * including page access tokens, name of the page, permission for particular one
 	 * @param urlAccounts urlPermissions specified url ot facebook api
+	 * @throws ApiException request api exception
 	 */
-	private void accountsInfo(String urlAccounts){
+	private void accountsInfo(String urlAccounts) throws ApiException{
 		JsonNode accounts = makeRequest(urlAccounts);
+		
+		if (accounts == null){
+			throw new ApiException();
+		}
 		ArrayNode accArray = (ArrayNode) accounts.get("data");
 
 		for (final JsonNode element : accArray) {

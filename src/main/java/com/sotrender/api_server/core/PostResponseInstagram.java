@@ -3,6 +3,7 @@ package com.sotrender.api_server.core;
 import org.bson.Document;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.sotrender.api_server.exceptions.ApiException;
 import com.sotrender.api_server.exceptions.TokenExpired;
 
 /**
@@ -30,7 +31,7 @@ public class PostResponseInstagram extends PostResponse{
 	 * @throws Exception error occur during making instagram api request
 	 */
 	@Override
-	public void createEntity() throws TokenExpired, Exception {
+	public void createEntity() throws TokenExpired, ApiException {
 		this.mongoId = this.doc.get("_id").toString();
 		this.appId = this.doc.get("app_id").toString();
 		
@@ -46,13 +47,13 @@ public class PostResponseInstagram extends PostResponse{
 	 * @throws Exception error occur during making instagram api request
 	 */
 	@Override
-	protected void checkToken() throws TokenExpired, Exception {
+	protected void checkToken() throws TokenExpired, ApiException {
 		String url = "https://api.instagram.com/v1/users/self/?access_token=" + this.accessToken;
 		
 		JsonNode instagramJson = makeRequest(url);
 		
 		if (instagramJson == null){
-			throw new Exception("Error occur during making instagram api request");
+			throw new ApiException();
 		}
 		JsonNode dataInstagram = instagramJson.get("data");
 		JsonNode metaInstagram = instagramJson.get("meta");
