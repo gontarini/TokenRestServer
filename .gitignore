@@ -3,4 +3,5 @@
 *.metadata/
 *.jar
 *.classpath
+.idea
 target/
